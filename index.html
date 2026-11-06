@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Squishscouter</title>
+<meta name="description" content="A phone alert the moment hard-to-find squishy toys are back in stock at genuine UK shops.">
+<meta name="theme-color" content="#7A4FB0">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Squishscouter">
+<style>
+:root{ color-scheme:light; --bg:#FBF8F4; --card:#fff; --ink:#2A2233; --muted:#665D72; --line:#E7E0EA; --accent:#7A4FB0; --accent-ink:#fff; --accent-soft:#F0E8FA;
+  --ok:#1F7A4D; --ok-bg:#E3F4EA; --no:#9A3B3B; --no-bg:#F8E6E6; --warn:#7A5200; --warn-bg:#FFF1D1; --pre:#1D5E8C; --pre-bg:#E2F0FA; --shadow:0 1px 2px rgba(42,34,51,.06); }
+@media (prefers-color-scheme: dark){ :root{ color-scheme:dark; --bg:#17141B; --card:#221E28; --ink:#F1ECF5; --muted:#B4ABBF; --line:#3A3342; --accent:#B591E6; --accent-ink:#1A1420; --accent-soft:#2E2540;
+  --ok:#7FD6A6; --ok-bg:#173326; --no:#F0A3A3; --no-bg:#3A1F22; --warn:#F3C76B; --warn-bg:#3A2E14; --pre:#8CC8F2; --pre-bg:#16303F; --shadow:none; } }
+*{ box-sizing:border-box; }
+html{ -webkit-text-size-adjust:100%; }
+body{ margin:0; background:var(--bg); color:var(--ink); font:16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; min-height:100vh; }
+a{ color:var(--accent); }
+button{ font:inherit; color:inherit; }
+.wrap{ max-width:1100px; margin:0 auto; padding:0 16px; }
+header.top{ padding:calc(env(safe-area-inset-top) + 12px) 0 6px; }
+header.top .wrap{ display:flex; align-items:center; gap:10px; }
+header.top img{ width:32px; height:32px; border-radius:8px; }
+header.top h1{ font-size:1.25rem; margin:0; flex:1; }
+.offline{ font-size:.8rem; font-weight:600; color:var(--warn); background:var(--warn-bg); border-radius:999px; padding:3px 10px; }
+main{ padding-bottom:calc(env(safe-area-inset-bottom) + 96px); }
+h2{ font-size:1.3rem; margin:14px 0 4px; }
+h3{ font-size:1.02rem; margin:22px 0 6px; }
+p{ margin:6px 0; }
+.sub{ color:var(--muted); font-size:.9rem; }
+
+/* tabs: along the bottom on phones, along the top on wider screens */
+nav.tabs{ position:fixed; left:0; right:0; bottom:0; z-index:5; background:var(--card); border-top:1px solid var(--line); padding-bottom:env(safe-area-inset-bottom); }
+nav.tabs .wrap{ display:flex; padding:0; }
+nav.tabs button{ flex:1; min-width:0; background:none; border:0; padding:8px 2px 9px; display:flex; flex-direction:column; align-items:center; gap:2px; color:var(--muted); font-size:.74rem; font-weight:600; cursor:pointer; position:relative; }
+nav.tabs button svg{ width:24px; height:24px; }
+nav.tabs button[aria-current="page"]{ color:var(--accent); }
+nav.tabs .dot{ position:absolute; top:6px; left:calc(50% + 8px); min-width:9px; height:9px; border-radius:999px; background:#E0485F; }
+@media (min-width:720px){
+  nav.tabs{ position:sticky; top:0; bottom:auto; border-top:0; border-bottom:1px solid var(--line); background:var(--bg); padding:0; }
+  nav.tabs .wrap{ padding:0 16px; gap:4px; }
+  nav.tabs button{ flex:0 0 auto; flex-direction:row; gap:7px; font-size:.92rem; padding:12px 12px; border-bottom:3px solid transparent; }
+  nav.tabs button svg{ width:20px; height:20px; }
+  nav.tabs button[aria-current="page"]{ border-bottom-color:var(--accent); }
+  nav.tabs .dot{ top:9px; left:22px; }
+  main{ padding-bottom:40px; }
+}
+
+/* controls */
+.btn{ display:inline-flex; align-items:center; justify-content:center; gap:6px; text-align:center; text-decoration:none; font-weight:700; font-size:.9rem; border-radius:10px; padding:9px 14px; border:1.5px solid var(--accent); color:var(--accent); background:transparent; cursor:pointer; min-height:40px; }
+.btn.fill{ background:var(--accent); color:var(--accent-ink); }
+.btn.small{ font-size:.82rem; padding:6px 8px; min-height:36px; }
+.btn.quiet{ border-color:var(--line); color:var(--ink); }
+.btn:disabled{ opacity:.55; cursor:default; }
+.btn.on{ background:var(--accent-soft); }
+input[type=email], input[type=text], input[type=search], input[inputmode=numeric]{ font:inherit; width:100%; padding:10px 12px; border:1.5px solid var(--line); border-radius:10px; background:var(--card); color:inherit; min-height:44px; }
+input:focus-visible, .btn:focus-visible, .chip:focus-visible, nav.tabs button:focus-visible, .card .open:focus-visible{ outline:3px solid var(--accent); outline-offset:2px; }
+.chips{ display:flex; gap:6px; overflow-x:auto; padding:2px 0 6px; scrollbar-width:none; }
+.chips::-webkit-scrollbar{ display:none; }
+.chip{ flex:0 0 auto; border:1.5px solid var(--accent); color:var(--accent); background:transparent; border-radius:999px; padding:6px 12px; font-size:.86rem; font-weight:600; cursor:pointer; white-space:nowrap; }
+.chip.on{ background:var(--accent); color:var(--accent-ink); }
+.row{ display:flex; gap:8px 14px; align-items:center; flex-wrap:wrap; }
+.row label{ font-size:.9rem; display:inline-flex; align-items:center; gap:6px; min-height:36px; }
+.row input[type=checkbox]{ width:18px; height:18px; accent-color:var(--accent); }
+.bar{ position:sticky; top:0; z-index:3; background:var(--bg); padding:8px 0 6px; }
+@media (min-width:720px){ .bar{ top:47px; } }
+.err{ color:var(--no); font-size:.9rem; min-height:1.2em; }
+.err:empty{ min-height:0; margin:0; }
+.toast{ position:fixed; left:50%; transform:translateX(-50%); bottom:calc(env(safe-area-inset-bottom) + 78px); z-index:20; background:var(--ink); color:var(--bg); padding:10px 16px; border-radius:12px; font-size:.9rem; max-width:calc(100% - 32px); box-shadow:0 4px 16px rgba(0,0,0,.2); }
+@media (min-width:720px){ .toast{ bottom:24px; } }
+
+/* product cards */
+.grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(162px, 1fr)); gap:12px; }
+.card{ background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; display:flex; flex-direction:column; box-shadow:var(--shadow); min-width:0; }
+.card .open{ display:block; border:0; padding:0; background:none; text-align:left; cursor:pointer; width:100%; }
+.card img, .card .noimg{ width:100%; aspect-ratio:1; object-fit:cover; background:var(--line); display:block; }
+.card .body{ padding:9px 10px 10px; display:flex; flex-direction:column; gap:5px; flex:1; min-width:0; }
+.card h4{ margin:0; font-size:.92rem; line-height:1.3; overflow-wrap:anywhere; }
+.meta{ font-size:.8rem; color:var(--muted); overflow-wrap:anywhere; }
+.badge{ align-self:flex-start; font-size:.76rem; font-weight:700; border-radius:999px; padding:2px 9px; }
+.badge.ok{ color:var(--ok); background:var(--ok-bg); } .badge.no{ color:var(--no); background:var(--no-bg); } .badge.pre{ color:var(--pre); background:var(--pre-bg); }
+.strings{ font-size:.78rem; font-weight:600; color:var(--warn); background:var(--warn-bg); border-radius:8px; padding:4px 7px; }
+.next{ font-size:.76rem; color:var(--muted); font-variant-numeric:tabular-nums; }
+.next.bad{ color:var(--no); }
+.btns{ display:flex; flex-direction:column; gap:6px; margin-top:auto; padding-top:4px; }
+.empty{ color:var(--muted); background:var(--card); border:1px dashed var(--line); border-radius:14px; padding:18px; text-align:center; }
+.more{ display:flex; justify-content:center; margin:16px 0; }
+
+/* lists */
+.list{ display:flex; flex-direction:column; gap:10px; }
+.item{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px; display:flex; gap:12px; align-items:flex-start; box-shadow:var(--shadow); min-width:0; }
+.item img{ width:64px; height:64px; border-radius:10px; object-fit:cover; flex:0 0 auto; background:var(--line); }
+.item .txt{ flex:1; min-width:0; }
+.item .t{ font-weight:700; overflow-wrap:anywhere; }
+.links{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.fam{ background:var(--accent-soft); border-radius:14px; padding:12px 14px; margin:6px 0 12px; }
+.fam .row{ justify-content:space-between; }
+.panel{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin:10px 0; box-shadow:var(--shadow); }
+.panel h3{ margin-top:0; }
+.shops{ display:grid; grid-template-columns:repeat(auto-fill, minmax(250px, 1fr)); gap:10px; }
+
+/* sign-in */
+.signin{ max-width:420px; margin:6vh auto 0; padding:0 16px; text-align:center; }
+.signin img{ width:88px; height:88px; border-radius:22px; }
+.signin h1{ margin:12px 0 4px; }
+.signin form{ text-align:left; margin-top:20px; display:flex; flex-direction:column; gap:10px; }
+.signin label{ font-weight:600; font-size:.92rem; }
+
+/* product sheet */
+.sheet-back{ position:fixed; inset:0; z-index:10; background:rgba(20,16,26,.5); display:flex; align-items:flex-end; justify-content:center; }
+.sheet{ background:var(--bg); width:100%; max-width:560px; max-height:92vh; overflow:auto; border-radius:18px 18px 0 0; padding:0 0 calc(env(safe-area-inset-bottom) + 16px); }
+@media (min-width:720px){ .sheet-back{ align-items:center; } .sheet{ border-radius:18px; } }
+.sheet .hero{ position:relative; }
+.sheet .hero img{ width:100%; max-height:46vh; object-fit:contain; background:var(--card); display:block; }
+.sheet .x{ position:absolute; top:10px; right:10px; width:40px; height:40px; border-radius:999px; border:0; background:rgba(20,16,26,.6); color:#fff; font-size:1.2rem; cursor:pointer; }
+.sheet .in{ padding:12px 16px; display:flex; flex-direction:column; gap:8px; }
+.sheet h2{ margin:0; font-size:1.2rem; overflow-wrap:anywhere; }
+.eds{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
+.eds li{ display:flex; gap:8px; align-items:center; justify-content:space-between; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:8px 10px; font-size:.9rem; }
+.eds li span{ min-width:0; overflow-wrap:anywhere; }
+.sheet .acts{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.sheet .acts .btn:first-child:last-child, .sheet .acts .wide{ grid-column:1 / -1; }
+[hidden]{ display:none !important; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+'use strict';
+/* Squishscouter: the app. One page, no build step, no libraries. Talks to Supabase directly over its REST API
+   (sign-in by emailed code, then the functions in sql/schema.sql), and to the check-stock Edge Function for test
+   notifications. config.json holds the project address and publishable key (both meant to be public). */
+const VERSION = '0.2';
+const $ = (s, el) => (el || document).querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const money = n => n == null ? '' : '£' + (+n).toFixed(2);
+const store = {
+  get(k){ try{ return JSON.parse(localStorage.getItem('ss-' + k)); }catch(e){ return null; } },
+  set(k, v){ try{ if(v == null) localStorage.removeItem('ss-' + k); else localStorage.setItem('ss-' + k, JSON.stringify(v)); }catch(e){} }
+};
+const TEST_PUSH = window.__SS_TEST_PUSH || null;   // automated tests only: pretends this browser supports push
+
+/* ---------------- server ---------------- */
+let cfg = null;
+const api = {
+  auth: store.get('auth'),
+  fail(msg, offline, status){ const e = new Error(msg); e.offline = !!offline; e.status = status; return e; },
+  async http(url, opts){
+    let r;
+    try{ r = await fetch(url, opts); }catch(e){ throw api.fail('You appear to be offline.', true); }
+    const text = await r.text(); let body = null; try{ body = text ? JSON.parse(text) : null; }catch(e){}
+    if(!r.ok){
+      const msg = (body && (body.msg || body.message || body.error_description || body.error)) || ('The server said ' + r.status);
+      throw api.fail(msg, false, r.status);
+    }
+    return body;
+  },
+  authCall(path, payload){ return api.http(cfg.url + '/auth/v1/' + path, { method:'POST', headers:{ apikey:cfg.key, 'Content-Type':'application/json' }, body:JSON.stringify(payload) }); },
+  take(s){ api.auth = { access:s.access_token, refresh:s.refresh_token, exp:Date.now() + (s.expires_in || 3600) * 1000, email:(s.user && s.user.email) || (api.auth && api.auth.email) || '' }; store.set('auth', api.auth); },
+  async token(){
+    if(!api.auth) throw api.fail('Please sign in again.', false, 401);
+    if(api.auth.exp - Date.now() > 60000) return api.auth.access;
+    try{ api.take(await api.authCall('token?grant_type=refresh_token', { refresh_token:api.auth.refresh })); }
+    catch(e){ if(!e.offline){ signOut(true); } throw e; }
+    return api.auth.access;
+  },
+  async rpc(name, args, retried){
+    const t = await api.token();
+    try{ return await api.http(cfg.url + '/rest/v1/rpc/' + name, { method:'POST', headers:{ apikey:cfg.key, Authorization:'Bearer ' + t, 'Content-Type':'application/json' }, body:JSON.stringify(args || {}) }); }
+    catch(e){ if(e.status === 401 && !retried){ api.auth.exp = 0; return api.rpc(name, args, true); } throw e; }
+  },
+  async fn(name, body){
+    const t = await api.token();
+    return api.http(cfg.url + '/functions/v1/' + name, { method:'POST', headers:{ apikey:cfg.key, Authorization:'Bearer ' + t, 'Content-Type':'application/json' }, body:JSON.stringify(body || {}) });
+  }
+};
+/* read through a cache, so the app still shows the last thing it loaded with no signal */
+async function cached(key, name, args){
+  try{ const v = await api.rpc(name, args); store.set('c-' + key, v); setOffline(false); return v; }
+  catch(e){ if(e.offline){ setOffline(true); const v = store.get('c-' + key); if(v != null) return v; } throw e; }
+}
+
+/* ---------------- state ---------------- */
+const S = {
+  tab: store.get('tab') || 'watching',
+  shops: {}, shopList: [], families: [], watches: null, alerts: null,
+  browse: { family: store.get('fam') || 'needoh', q: '', inStock: false, noStrings: false, items: [], total: 0, inStockCount: 0, loading: false, err: '' },
+  seenAlert: store.get('seenAlert') || 0
+};
+const TABS = [
+  ['watching', 'Watching', '<path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.9 4.5c2.1 0 3.6 1.1 5.1 3 1.5-1.9 3-3 5.1-3 3.9 0 6 3.9 4.5 7.3C19.5 16.4 12 21 12 21Z"/>'],
+  ['browse', 'Browse', '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.8-4.8"/>'],
+  ['shops', 'Shops', '<path d="M3 9.5 4.6 4h14.8L21 9.5M3 9.5h18M3 9.5c0 1.6 1.3 2.5 3 2.5s3-.9 3-2.5c0 1.6 1.3 2.5 3 2.5s3-.9 3-2.5c0 1.6 1.3 2.5 3 2.5s3-.9 3-2.5M5 12v8h14v-8M10 20v-4.5h4V20"/>'],
+  ['alerts', 'Alerts', '<path d="M6 16V11a6 6 0 1 1 12 0v5l1.8 2H4.2L6 16Z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/>'],
+  ['settings', 'Settings', '<circle cx="12" cy="12" r="3.2"/><path d="M19.4 13.5a7.7 7.7 0 0 0 0-3l2-1.5-2-3.4-2.3.9a7.6 7.6 0 0 0-2.6-1.5L14 2.6h-4l-.5 2.4A7.6 7.6 0 0 0 7 6.5l-2.3-.9-2 3.4 2 1.5a7.7 7.7 0 0 0 0 3l-2 1.5 2 3.4 2.3-.9a7.6 7.6 0 0 0 2.6 1.5l.4 2.4h4l.5-2.4a7.6 7.6 0 0 0 2.6-1.5l2.3.9 2-3.4-2-1.5Z"/>']
+];
+const icon = d => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
+
+/* ---------------- helpers ---------------- */
+let toastTimer = null;
+function toast(msg){
+  let t = $('#toast'); if(!t){ t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+  t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 3500);
+}
+function setOffline(on){ const el = $('#offline'); if(el) el.hidden = !on; }
+const hhmm = d => new Date(d).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+function when(d){
+  const t = new Date(d), now = new Date(), day = 86400000;
+  const sameDay = t.toDateString() === now.toDateString(), yest = new Date(now - day).toDateString() === t.toDateString();
+  if(sameDay) return 'Today ' + hhmm(t);
+  if(yest) return 'Yesterday ' + hhmm(t);
+  return t.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' }) + ' ' + hhmm(t);
+}
+function dur(ms){
+  const m = Math.round(ms / 60000);
+  if(m < 1) return 'under a minute'; if(m < 60) return m + ' min';
+  const h = Math.floor(m / 60), r = m % 60; if(h < 24) return h + ' h' + (r ? ' ' + r + ' min' : '');
+  return Math.round(h / 24) + (Math.round(h / 24) === 1 ? ' day' : ' days');
+}
+const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
+function priceText(p){ if(p.price_min == null) return ''; return +p.price_min === +p.price_max ? money(p.price_min) : money(p.price_min) + '–' + money(p.price_max); }
+function badge(p){
+  if(p.gone) return '<span class="badge no">No longer listed</span>';
+  if(!p.available) return '<span class="badge no">Sold out</span>';
+  if(p.preorder) return '<span class="badge pre">Pre-order</span>';
+  return '<span class="badge ok">In stock</span>';
+}
+/* "Checked 14:05 · next check in 3:12" for a shop */
+function nextText(shop){
+  if(!shop) return { t:'' };
+  if(shop.blocked) return { t:'Automatic checks stopped: check it yourself', bad:true };
+  if(!shop.last_checked) return { t:'Not checked yet · first check soon' };
+  const left = Date.parse(shop.next_check) - Date.now();
+  const wait = left > 0 ? Math.floor(left / 60000) + ':' + String(Math.floor(left / 1000) % 60).padStart(2, '0') : null;
+  if(shop.fail_count > 0) return { t:'Couldn’t check at ' + hhmm(shop.last_checked) + ' · ' + (wait ? 'trying again in ' + wait : 'trying again now'), bad:true };
+  return { t:'Checked ' + hhmm(shop.last_checked) + ' · ' + (wait ? 'next check in ' + wait : 'checking now…') };
+}
+function tick(){
+  document.querySelectorAll('.next[data-shop]').forEach(el => {
+    const n = nextText(S.shops[el.dataset.shop]); if(el.textContent !== n.t) el.textContent = n.t; el.classList.toggle('bad', !!n.bad);
+  });
+}
+
+/* ---------------- product card and sheet ---------------- */
+function card(p){
+  const shop = S.shops[p.shop_id];
+  return '<div class="card" data-id="' + p.id + '">' +
+    '<button class="open" data-open="' + p.id + '" aria-label="' + esc(p.title) + ': details">' +
+      (p.image ? '<img loading="lazy" src="' + esc(p.image) + '" alt="">' : '<div class="noimg"></div>') + '</button>' +
+    '<div class="body"><h4>' + esc(p.title) + '</h4>' +
+    '<span class="meta">' + esc(p.shop) + (priceText(p) ? ' · ' + priceText(p) : '') + (p.editions > 1 ? ' · ' + p.editions_in + ' of ' + p.editions + ' in stock' : '') + '</span>' +
+    badge(p) + (p.strings_tag ? '<span class="strings">⚠️ ' + esc(p.strings || 'Strings attached: check the shop page') + '</span>' : '') +
+    '<span class="next" data-shop="' + (shop ? shop.id : '') + '"></span>' +
+    '<div class="btns">' + watchBtn(p) +
+      '<a class="btn small quiet" href="' + esc(p.url) + '" target="_blank" rel="noopener">Open in shop</a>' +
+      (p.available && p.basket && !p.gone ? '<a class="btn small fill" href="' + esc(p.basket) + '" target="_blank" rel="noopener">Add to basket</a>' : '') +
+    '</div></div></div>';
+}
+function watchBtn(p, big){
+  return '<button class="btn' + (big ? '' : ' small') + (p.watched ? ' on' : '') + '" data-watch="' + p.id + '" aria-pressed="' + (p.watched ? 'true' : 'false') + '">' + (p.watched ? '✓ Watching' : 'Watch') + '</button>';
+}
+async function toggleWatch(id, btn){
+  const on = btn.getAttribute('aria-pressed') !== 'true';
+  document.querySelectorAll('[data-watch="' + id + '"]').forEach(b => { b.outerHTML = watchBtn({ id, watched:on }, !b.classList.contains('small')); });
+  [S.browse.items, S.watches && S.watches.products].forEach(list => (list || []).forEach(p => { if(String(p.id) === String(id)) p.watched = on; }));
+  try{
+    await api.rpc(on ? 'watch_product' : 'unwatch_product', { p_id:+id });
+    toast(on ? 'Watching. You’ll get an alert when it’s back in stock.' : 'Stopped watching.');
+    S.watches = null; if(S.tab === 'watching') loadWatching();
+  }catch(e){
+    document.querySelectorAll('[data-watch="' + id + '"]').forEach(b => { b.outerHTML = watchBtn({ id, watched:!on }, !b.classList.contains('small')); });
+    toast(e.offline ? 'You’re offline, so that didn’t save. Try again with a signal.' : e.message);
+  }
+}
+/* restocks from the history: how long each one lasted */
+function restocks(events){
+  const ev = (events || []).slice().sort((a, b) => Date.parse(a.at) - Date.parse(b.at)), open = {}, done = [];
+  ev.forEach(e => {
+    if(e.became === 'in') open[e.variant_id] = Date.parse(e.at);
+    else if(open[e.variant_id] != null){ done.push({ at:open[e.variant_id], lasted:Date.parse(e.at) - open[e.variant_id] }); delete open[e.variant_id]; }
+  });
+  return done.sort((a, b) => b.at - a.at);
+}
+async function openSheet(id){
+  closeSheet();
+  const back = document.createElement('div'); back.className = 'sheet-back'; back.id = 'sheet';
+  back.innerHTML = '<div class="sheet" role="dialog" aria-modal="true" aria-label="Product details"><div class="in"><p class="sub">Loading…</p></div></div>';
+  back.addEventListener('click', e => { if(e.target === back || e.target.closest('.x')) closeSheet(); });
+  document.body.appendChild(back);
+  let p;
+  try{ p = await api.rpc('product_detail', { p_id:+id }); }
+  catch(e){ $('.sheet .in', back).innerHTML = '<p class="err">' + esc(e.message) + '</p><button class="btn x-close">Close</button>'; $('.x-close', back).onclick = closeSheet; return; }
+  if(!p){ closeSheet(); toast('That product isn’t listed any more.'); return; }
+  const shop = S.shops[p.shop_id], r = restocks(p.events);
+  const big = p.image ? p.image.replace(/width=300/, 'width=700') : '';
+  const lasted = r.slice(0, 3).map(x => dur(x.lasted));
+  const hist = [];
+  if(p.available && p.last_in) hist.push('In stock since ' + when(p.last_in) + '.');
+  else if(p.last_in) hist.push('Last came into stock ' + when(p.last_in) + '.');
+  else hist.push('Not seen in stock since we started watching this shop.');
+  if(lasted.length) hist.push((lasted.length === 1 ? 'The last restock' : 'The last ' + lasted.length + ' restocks') + ' sold out after ' + lasted.join(', ') + '.');
+  $('.sheet', back).innerHTML =
+    '<div class="hero">' + (big ? '<img src="' + esc(big) + '" alt="">' : '') + '<button class="x" aria-label="Close">✕</button></div>' +
+    '<div class="in"><h2>' + esc(p.title) + '</h2>' +
+    '<span class="meta">' + esc(p.shop) + (p.vendor ? ' · ' + esc(p.vendor) : '') + (priceText(p) ? ' · ' + priceText(p) : '') + '</span>' + badge(p) +
+    (p.strings_tag ? '<span class="strings">⚠️ ' + esc(p.strings || 'Strings attached: check the shop page') + '</span>' : '') +
+    '<span class="next" data-shop="' + (shop ? shop.id : '') + '"></span>' +
+    (p.variants.length > 1 ? '<h3>Editions</h3><ul class="eds">' + p.variants.map(v => '<li><span>' + (v.available ? '✅ ' : '❌ ') + esc(v.title || 'Standard') + ' · ' + money(v.price) + '</span>' +
+      (v.available && v.basket && !p.gone ? '<a class="btn small fill" href="' + esc(v.basket) + '" target="_blank" rel="noopener">Add to basket</a>' : '') + '</li>').join('') + '</ul>' : '') +
+    '<h3>Restocks</h3><p class="sub">' + esc(hist.join(' ')) + '</p>' +
+    '<div class="acts">' + watchBtn(p, true) +
+      '<a class="btn quiet" href="' + esc(p.url) + '" target="_blank" rel="noopener">Open in shop</a>' +
+      (p.available && p.basket && !p.gone && p.variants.length <= 1 ? '<a class="btn fill wide" href="' + esc(p.basket) + '" target="_blank" rel="noopener">Add to basket</a>' : '') +
+    '</div><p class="sub">Add to basket opens the shop’s own checkout with this in your basket. You pay the shop as normal; Squishscouter never buys anything for you.</p></div>';
+  tick();
+  const x = $('.x', back); if(x) x.focus();
+}
+function closeSheet(){ const s = $('#sheet'); if(s) s.remove(); }
+
+/* ---------------- pages ---------------- */
+function frame(){
+  $('#app').innerHTML =
+    '<header class="top"><div class="wrap"><img src="icon.svg" alt=""><h1>Squishscouter</h1><span class="offline" id="offline" hidden>Offline</span></div></header>' +
+    '<nav class="tabs" aria-label="Sections"><div class="wrap">' + TABS.map(t => '<button data-tab="' + t[0] + '">' + icon(t[2]) + '<span>' + t[1] + '</span>' + (t[0] === 'alerts' ? '<i class="dot" hidden></i>' : '') + '</button>').join('') + '</div></nav>' +
+    '<main><div class="wrap" id="page"></div></main>';
+}
+function go(tab){
+  if(!TABS.some(t => t[0] === tab)) tab = 'watching';
+  S.tab = tab; store.set('tab', tab);
+  document.querySelectorAll('nav.tabs button').forEach(b => { if(b.dataset.tab === tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+  window.scrollTo(0, 0);
+  ({ watching:loadWatching, browse:drawBrowse, shops:drawShops, alerts:loadAlerts, settings:drawSettings })[tab]();
+}
+const page = () => $('#page');
+
+async function loadWatching(){
+  if(S.tab !== 'watching') return;
+  if(!S.watches) page().innerHTML = '<h2>Watching</h2><p class="sub">Loading…</p>';
+  else drawWatching();
+  try{ S.watches = await cached('watches', 'my_watches'); }catch(e){ if(S.tab === 'watching') page().innerHTML = '<h2>Watching</h2><p class="err">' + esc(e.message) + '</p>'; return; }
+  drawWatching();
+}
+function drawWatching(){
+  if(S.tab !== 'watching' || !S.watches) return;
+  const w = S.watches, inStock = w.products.filter(p => p.available && !p.gone).length;
+  let h = '<h2>Watching</h2>';
+  if(!w.products.length && !w.families.length){
+    h += '<div class="empty"><p><b>Nothing watched yet.</b></p><p>Find something in Browse and tap <b>Watch</b>. You’ll get a phone notification the moment it’s back in stock.</p><p><button class="btn fill" data-tab-go="browse">Browse</button></p></div>';
+    page().innerHTML = h; return;
+  }
+  h += '<p class="sub">' + w.products.length + ' product' + (w.products.length === 1 ? '' : 's') + (w.products.length ? ', ' + inStock + ' in stock right now' : '') + '.</p>';
+  if(w.families.length) h += w.families.map(f => '<div class="fam"><div class="row"><span><b>' + esc(f.label) + '</b>: ' + (f.restocks ? 'any new listing, and any that comes back in stock' : 'any new listing') +
+    '<br><span class="sub">' + f.n + ' listed, ' + f.in_stock + ' in stock</span></span><button class="btn small quiet" data-unfam="' + esc(f.family) + '">Stop</button></div></div>').join('');
+  if(w.products.length) h += '<div class="grid">' + w.products.map(card).join('') + '</div>';
+  page().innerHTML = h; tick();
+}
+
+function drawBrowse(){
+  const b = S.browse, fams = S.families;
+  const fam = fams.find(f => f.id === b.family);
+  page().innerHTML = '<div class="bar"><h2 style="margin-top:4px">Browse</h2>' +
+    '<div class="chips" role="group" aria-label="Families">' + [{ id:'', label:'Everything' }].concat(fams).map(f =>
+      '<button class="chip' + (f.id === b.family ? ' on' : '') + '" data-fam="' + esc(f.id) + '" aria-pressed="' + (f.id === b.family) + '">' + esc(f.label) + (f.n != null ? ' (' + f.n + ')' : '') + '</button>').join('') + '</div>' +
+    '<input type="search" id="q" placeholder="Search, e.g. nice cube, starlight, glow" aria-label="Search products" value="' + esc(b.q) + '">' +
+    '<div class="row"><label><input type="checkbox" id="instock"' + (b.inStock ? ' checked' : '') + '> In stock only</label><label><input type="checkbox" id="nostrings"' + (b.noStrings ? ' checked' : '') + '> No strings attached</label></div></div>' +
+    (fam ? '<div class="fam" id="famBox"></div>' : '') +
+    '<p class="sub" id="count"></p><div class="grid" id="grid"></div><div class="more"><button class="btn quiet" id="more" hidden>Show more</button></div>';
+  if(fam) drawFamBox(fam);
+  $('#q').addEventListener('input', debounce(() => { b.q = $('#q').value; loadBrowse(false); }, 300));
+  $('#instock').addEventListener('change', e => { b.inStock = e.target.checked; loadBrowse(false); });
+  $('#nostrings').addEventListener('change', e => { b.noStrings = e.target.checked; loadBrowse(false); });
+  $('#more').addEventListener('click', () => loadBrowse(true));
+  if(b.items.length && b.key === browseKey()) drawGrid(); else loadBrowse(false);
+}
+function drawFamBox(f){
+  const box = $('#famBox'); if(!box) return;
+  box.innerHTML = f.watched
+    ? '<div class="row"><span>You’re watching every <b>' + esc(f.label) + '</b>: ' + (f.restocks ? 'new listings and restocks.' : 'new listings.') + '</span><button class="btn small quiet" data-unfam="' + esc(f.id) + '">Stop</button></div>'
+    : '<div class="row"><span>Tell me when a new <b>' + esc(f.label) + '</b> is listed at any shop.</span><button class="btn small fill" id="famWatch">Watch the whole family</button></div>' +
+      '<label class="sub" style="display:flex;gap:6px;align-items:center;margin-top:6px"><input type="checkbox" id="famRestocks" style="width:18px;height:18px;accent-color:var(--accent)"> Also when any of them comes back in stock (can be a lot)</label>';
+  const w = $('#famWatch'); if(w) w.onclick = async () => {
+    w.disabled = true;
+    try{ await api.rpc('watch_family', { p_family:f.id, p_restocks:$('#famRestocks').checked }); f.watched = true; f.restocks = $('#famRestocks').checked; S.watches = null; toast('Watching every ' + f.label + '.'); }
+    catch(e){ toast(e.message); }
+    drawFamBox(f);
+  };
+}
+const browseKey = () => JSON.stringify([S.browse.family, S.browse.q.trim().toLowerCase(), S.browse.inStock, S.browse.noStrings]);
+let browseSeq = 0;
+async function loadBrowse(more){
+  const b = S.browse, seq = ++browseSeq, key = browseKey();
+  b.loading = true; b.err = '';
+  if(!more){ const c = $('#count'); if(c) c.textContent = 'Loading…'; }
+  try{
+    const r = await api.rpc('browse', { p_family:b.family || null, p_q:b.q.trim() || null, p_in_stock:b.inStock, p_no_strings:b.noStrings, p_limit:60, p_offset:more ? b.items.length : 0 });
+    if(seq !== browseSeq) return;
+    b.items = more ? b.items.concat(r.items) : r.items; b.total = r.total; b.inStockCount = r.in_stock; b.key = key; setOffline(false);
+  }catch(e){ if(seq !== browseSeq) return; b.err = e.offline ? 'You’re offline. Browse needs a signal.' : e.message; if(!more) b.items = []; if(e.offline) setOffline(true); }
+  b.loading = false;
+  if(S.tab === 'browse') drawGrid();
+}
+function drawGrid(){
+  const b = S.browse, g = $('#grid'); if(!g) return;
+  $('#count').innerHTML = b.err ? '<span class="err">' + esc(b.err) + '</span>' : b.total + ' product' + (b.total === 1 ? '' : 's') + ', ' + b.inStockCount + ' in stock';
+  g.innerHTML = b.items.length ? b.items.map(card).join('') : (b.err ? '' : '<div class="empty">Nothing matches. Try fewer words, or another family.</div>');
+  $('#more').hidden = b.items.length >= b.total;
+  tick();
+}
+function debounce(fn, ms){ let t; return function(){ clearTimeout(t); t = setTimeout(fn, ms); }; }
+
+function searchLinks(s){
+  if(!s.search) return '<a class="btn small quiet" href="' + esc(s.url) + '" target="_blank" rel="noopener">Open shop</a>';
+  return S.families.filter(f => f.id !== 'other-dumplings').map(f => '<a class="btn small quiet" href="' + esc(s.search.replace('{q}', encodeURIComponent(f.q || f.label))) + '" target="_blank" rel="noopener">' +
+    esc(f.label.replace(/ and bao buns| and sensory toys/, '').replace('Other squishy', 'Squishies')) + '</a>').join('');
+}
+function drawShops(){
+  const hand = S.shopList.filter(s => s.kind === 'manual' || s.blocked), auto = S.shopList.filter(s => s.kind === 'shopify' && !s.blocked);
+  page().innerHTML = '<h2>Check it yourself</h2><p class="sub">These shops don’t publish stock we can read, so each button opens that shop’s own search for you.</p>' +
+    '<div class="shops">' + hand.map(s => '<div class="item"><div class="txt"><div class="t"><a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(s.name) + '</a></div>' +
+      '<div class="meta">' + esc(s.blocked ? 'We stopped checking automatically: ' + s.blocked : cap(s.why || 'No stock list we can read')) + (s.note ? '. ' + esc(cap(s.note)) : '') + '</div>' +
+      '<div class="links">' + (s.blocked ? '<a class="btn small quiet" href="' + esc(s.url) + '" target="_blank" rel="noopener">Open shop</a>' : searchLinks(s)) + '</div>' +
+      (s.unverified ? '<div class="meta">Search link not confirmed yet.</div>' : '') + '</div></div>').join('') + '</div>' +
+    '<h2 style="margin-top:28px">Checked for you</h2><p class="sub">Squishscouter reads these shops’ public stock lists every few minutes, politely, and alerts you the moment something you watch comes back.</p>' +
+    '<div class="shops">' + auto.map(s => '<div class="item"><div class="txt"><div class="t"><a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(s.name) + '</a></div>' +
+      '<div class="next" data-shop="' + s.id + '"></div>' + (s.last_error && s.fail_count ? '<div class="meta">Last problem: ' + esc(s.last_error) + '</div>' : '') + '</div></div>').join('') + '</div>';
+  tick();
+}
+
+async function loadAlerts(){
+  if(!S.alerts) page().innerHTML = '<h2>Alerts</h2><p class="sub">Loading…</p>';
+  else drawAlerts();
+  try{ S.alerts = await cached('alerts', 'my_alerts', { p_limit:100 }); }catch(e){ if(S.tab === 'alerts') page().innerHTML = '<h2>Alerts</h2><p class="err">' + esc(e.message) + '</p>'; return; }
+  drawAlerts();
+}
+function drawAlerts(){
+  if(S.tab !== 'alerts' || !S.alerts) return;
+  const list = S.alerts;
+  if(list.length){ S.seenAlert = Math.max(S.seenAlert, ...list.map(a => a.id)); store.set('seenAlert', S.seenAlert); markDot(); }
+  page().innerHTML = '<h2>Alerts</h2><p class="sub">Everything Squishscouter has told you, newest first.</p>' + (list.length ? '<div class="list">' + list.map(a =>
+    '<div class="item">' + (a.image ? '<img src="' + esc(a.image) + '" alt="" loading="lazy">' : '<img src="icon-192.png" alt="">') + '<div class="txt"><div class="t">' + esc(a.title) + '</div>' +
+    '<div class="meta">' + esc(a.body) + '</div><div class="meta">' + when(a.at) + ' · ' + (a.kind === 'test' ? 'test' : a.devices ? 'sent to ' + a.sent + ' of ' + a.devices + ' device' + (a.devices === 1 ? '' : 's') : 'no device had notifications on') +
+    (a.kind !== 'test' && a.available === false ? ' · sold out now' : '') + '</div>' +
+    (a.url && a.kind !== 'test' ? '<div class="links"><a class="btn small quiet" href="' + esc(a.url) + '" target="_blank" rel="noopener">Open in shop</a>' + (a.product_id ? '<button class="btn small quiet" data-open="' + a.product_id + '">Details</button>' : '') + '</div>' : '') +
+    '</div></div>').join('') + '</div>' : '<div class="empty">No alerts yet. When something you watch comes back in stock, it shows here as well as on your phone.</div>');
+}
+function markDot(){ const d = $('nav.tabs .dot'); if(!d) return; const latest = (S.alerts || store.get('c-alerts') || [])[0]; d.hidden = !(latest && latest.id > S.seenAlert); }
+
+/* ---------------- notifications on this device ---------------- */
+const push = {
+  supported(){ return !!TEST_PUSH || ('serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')); },
+  iosNeedsInstall(){
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent || '') || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+    return ios && !standalone;
+  },
+  reg(){ return TEST_PUSH ? Promise.resolve(TEST_PUSH.registration) : navigator.serviceWorker.ready; },
+  async current(){ if(!push.supported()) return null; try{ return await (await push.reg()).pushManager.getSubscription(); }catch(e){ return null; } },
+  b64ToBytes(s){ s = s.replace(/-/g, '+').replace(/_/g, '/'); while(s.length % 4) s += '='; const raw = atob(s), out = new Uint8Array(raw.length); for(let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i); return out; },
+  bytesToB64(buf){ const b = new Uint8Array(buf); let s = ''; for(let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); },
+  label(){ const ua = navigator.userAgent || ''; return /iphone/i.test(ua) ? 'iPhone' : /ipad/i.test(ua) ? 'iPad' : /android/i.test(ua) ? 'Android phone' : /windows/i.test(ua) ? 'Windows' : /mac/i.test(ua) ? 'Mac' : 'Browser'; },
+  async save(sub){ await api.rpc('save_push_sub', { p_endpoint:sub.endpoint, p_p256dh:push.bytesToB64(sub.getKey('p256dh')), p_auth:push.bytesToB64(sub.getKey('auth')), p_label:push.label() }); },
+  async enable(){
+    if(await Notification.requestPermission() !== 'granted') throw new Error('Notifications are blocked for this app. Allow them in your phone or browser settings, then try again.');
+    const reg = await push.reg();
+    const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:push.b64ToBytes(cfg.vapid) });
+    await push.save(sub);
+  },
+  async disable(){ const sub = await push.current(); if(!sub) return; try{ await api.rpc('remove_push_sub', { p_endpoint:sub.endpoint }); }catch(e){} try{ await sub.unsubscribe(); }catch(e){} }
+};
+let installPrompt = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installPrompt = e; if(S.tab === 'settings') drawSettings(); });
+
+function drawSettings(){
+  const standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+  page().innerHTML = '<h2>Settings</h2>' +
+    '<div class="panel" id="notify"><h3>Notifications on this device</h3><p class="sub">Checking…</p></div>' +
+    (standalone ? '' : '<div class="panel"><h3>Put it on your home screen</h3>' +
+      (installPrompt ? '<p>Install Squishscouter like an app, so it opens full screen and alerts arrive reliably.</p><button class="btn fill" id="install">Install the app</button>'
+        : '<p><b>iPhone:</b> in Safari, tap Share, then <b>Add to Home Screen</b>, and open Squishscouter from there. iPhones only show alerts for apps on the home screen.</p><p><b>Android:</b> in Chrome, tap ⋮ then <b>Add to Home screen</b> or <b>Install app</b>.</p>') + '</div>') +
+    '<div class="panel"><h3>Your account</h3><p>Signed in as <b>' + esc(api.auth && api.auth.email) + '</b>.</p><button class="btn quiet" id="signout">Sign out</button></div>' +
+    '<div class="panel"><h3>How it works, and your privacy</h3>' +
+      '<p>Every few minutes Squishscouter reads the public stock lists of genuine UK shops, the same lists their own websites use, as “Squishscouter”, one request at a time, and stops if a shop asks it to.</p>' +
+      '<p>When something you watch comes back in stock, everyone watching it is told at the same moment. <b>Add to basket</b> opens the shop’s own checkout and you pay the shop as normal: Squishscouter never buys, queues or adds anything for you.</p>' +
+      '<p>⚠️ marks <b>strings attached</b>, such as “only sold with £49 of other items” or “1 per order”.</p>' +
+      '<p>Genuine retailers only: no marketplaces or resellers.</p>' +
+      '<p><b>What we keep:</b> your email address (to sign you in), what you watch, the alerts sent to you, and each device’s notification address (so alerts reach it). Nothing else: no adverts, no tracking, nothing sold or shared. Signing out of a device stops its notifications.</p></div>' +
+    '<p class="sub">Squishscouter ' + VERSION + ' · private trial</p>';
+  $('#signout').onclick = () => { if(confirm('Sign out on this device? Its notifications stop too.')) signOut(false); };
+  const ins = $('#install'); if(ins) ins.onclick = async () => { installPrompt.prompt(); try{ await installPrompt.userChoice; }catch(e){} installPrompt = null; drawSettings(); };
+  drawNotify();
+}
+async function drawNotify(){
+  const box = $('#notify'); if(!box) return;
+  const say = (html) => { box.innerHTML = '<h3>Notifications on this device</h3>' + html; };
+  if(!cfg.vapid) return say('<p class="sub">Notifications aren’t switched on for this app yet (the server part needs setting up once).</p>');
+  if(!TEST_PUSH && push.iosNeedsInstall()) return say('<p>On iPhone and iPad, alerts only work in the installed app. Tap Share, then <b>Add to Home Screen</b>, open Squishscouter from your home screen and come back here.</p>');
+  if(!push.supported()) return say('<p>This browser can’t show alerts. Try the installed app, Chrome, Edge, Firefox or Safari.</p>');
+  if(Notification.permission === 'denied') return say('<p>Notifications are blocked for this app. Allow them in your phone or browser settings, then come back here.</p>');
+  const sub = await push.current();
+  let devices = null; try{ devices = await api.rpc('my_device_count'); }catch(e){}
+  const others = devices != null ? Math.max(0, devices - (sub ? 1 : 0)) : 0;
+  if(!sub){
+    say('<p>Turn on notifications to hear the moment something you watch is back in stock.</p>' + (others ? '<p class="sub">Already on for ' + others + ' other device' + (others === 1 ? '' : 's') + '.</p>' : '') +
+      '<button class="btn fill" id="pushOn">Turn on notifications</button><p class="err" id="pushErr"></p>');
+    $('#pushOn').onclick = async e => { e.target.disabled = true; $('#pushErr').textContent = '';
+      try{ await push.enable(); toast('Notifications on. Send yourself a test to check.'); drawNotify(); }catch(x){ $('#pushErr').textContent = x.message || 'Couldn’t turn notifications on.'; e.target.disabled = false; } };
+    return;
+  }
+  // keep the server's copy current (the browser can change the address)
+  push.save(sub).catch(() => {});
+  say('<p><b>On for this device.</b>' + (others ? ' Also on for ' + others + ' other device' + (others === 1 ? '' : 's') + '.' : '') + '</p>' +
+    '<div class="row"><button class="btn fill" id="pushTest">Send a test notification</button><button class="btn quiet" id="pushOff">Turn off here</button></div><p class="err" id="pushErr"></p>');
+  $('#pushTest').onclick = async e => { e.target.disabled = true; $('#pushErr').textContent = '';
+    try{ const r = await api.fn('check-stock', { action:'test' }); toast(r && r.sent ? 'Sent. It should arrive in a few seconds.' : 'Couldn’t reach this device. Try turning notifications off and on.'); S.alerts = null; }
+    catch(x){ $('#pushErr').textContent = x.message; }
+    e.target.disabled = false; };
+  $('#pushOff').onclick = async () => { await push.disable(); toast('Notifications off on this device.'); drawNotify(); };
+}
+
+/* ---------------- sign-in ---------------- */
+function drawSignIn(step, email, err){
+  $('#app').innerHTML = '<div class="signin"><img src="icon.svg" alt=""><h1>Squishscouter</h1>' +
+    '<p class="sub">A phone alert the moment hard-to-find squishy toys are back in stock at genuine UK shops.</p>' +
+    (step === 'code'
+      ? '<form id="f"><label for="code">We’ve emailed a code to ' + esc(email) + '. Type it here.</label><input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456" required>' +
+        '<button class="btn fill" type="submit">Sign in</button><p class="err" id="err" role="alert">' + esc(err || '') + '</p><button class="btn quiet" type="button" id="back">Use a different email</button></form>'
+      : '<form id="f"><label for="email">Your email address</label><input id="email" type="email" autocomplete="email" required value="' + esc(email || '') + '">' +
+        '<button class="btn fill" type="submit">Email me a sign-in code</button><p class="err" id="err" role="alert">' + esc(err || '') + '</p>' +
+        '<p class="sub">No password. We email a code each time you sign in on a new device. This is a private trial, so only invited email addresses work.</p></form>') +
+    (cfg.contact ? '<p class="sub" style="margin-top:28px">Run a shop? Squishscouter reads public stock lists a few times an hour, one request at a time. To ask us to stop, contact <a href="' + esc(/^[^:@]+@/.test(cfg.contact) ? 'mailto:' + cfg.contact : cfg.contact) + '">' + esc(cfg.contact) + '</a>.</p>' : '') + '</div>';
+  const f = $('#f');
+  if(step === 'code'){
+    $('#code').focus();
+    $('#back').onclick = () => drawSignIn('email', email);
+    f.onsubmit = async e => { e.preventDefault(); const code = $('#code').value.replace(/\s+/g, '');
+      if(!/^\d{4,10}$/.test(code)){ $('#err').textContent = 'Type the number from the email.'; return; }
+      f.querySelector('button[type=submit]').disabled = true;
+      try{ api.take(await api.authCall('verify', { type:'email', email, token:code })); api.auth.email = email; store.set('auth', api.auth); start(); }
+      catch(x){ drawSignIn('code', email, x.offline ? x.message : 'That code didn’t work. Check it, or ask for a new one.'); } };
+  } else {
+    f.onsubmit = async e => { e.preventDefault(); const em = $('#email').value.trim().toLowerCase();
+      if(!/^\S+@\S+\.\S+$/.test(em)){ $('#err').textContent = 'That email address doesn’t look right.'; return; }
+      f.querySelector('button[type=submit]').disabled = true;
+      try{ await api.authCall('otp', { email:em, create_user:false }); drawSignIn('code', em); }
+      catch(x){ drawSignIn('email', em, x.offline ? x.message : /signup|not allowed|not found/i.test(x.message) ? 'That email address isn’t on the trial list.' : /rate|seconds/i.test(x.message) ? 'Please wait a minute before asking for another code.' : x.message); } };
+  }
+}
+async function signOut(expired){
+  try{ if(!expired) await push.disable(); }catch(e){}
+  api.auth = null; store.set('auth', null);
+  Object.keys(localStorage).filter(k => /^ss-c-/.test(k)).forEach(k => localStorage.removeItem(k));
+  S.watches = null; S.alerts = null; S.browse.items = [];
+  drawSignIn('email', '', expired ? 'Please sign in again.' : '');
+}
+
+/* ---------------- start ---------------- */
+async function refreshShops(){
+  try{ const list = await cached('shops', 'app_shops'); S.shopList = list || []; S.shops = {}; S.shopList.forEach(s => { S.shops[s.id] = s; }); tick(); if(S.tab === 'shops' && !$('#sheet')) drawShops(); }catch(e){}
+}
+async function refreshFamilies(){
+  try{ S.families = await cached('families', 'family_counts') || []; if(S.tab === 'browse') drawBrowse(); }catch(e){}
+}
+async function refreshAlertDot(){ try{ const a = await api.rpc('my_alerts', { p_limit:1 }); if(a && a[0]){ const c = store.get('c-alerts') || []; if(!c[0] || c[0].id !== a[0].id) S.alerts = null; store.set('c-alerts', a.concat(c.filter(x => x.id !== a[0].id)).slice(0, 100)); } markDot(); }catch(e){} }
+let started = false;
+async function start(){
+  frame();
+  S.shopList = store.get('c-shops') || []; S.shopList.forEach(s => { S.shops[s.id] = s; });
+  S.families = store.get('c-families') || [];
+  go(S.tab);
+  await Promise.all([refreshShops(), refreshFamilies()]);
+  refreshAlertDot();
+  if(started) return; started = true;
+  setInterval(tick, 1000);
+  setInterval(() => { if(document.visibilityState === 'visible' && api.auth) refreshShops(); }, 60000);
+  setInterval(() => { if(document.visibilityState === 'visible' && api.auth){ refreshAlertDot(); if(S.tab === 'watching') loadWatching(); } }, 120000);
+  document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible' && api.auth){ refreshShops(); refreshAlertDot(); if(S.tab === 'watching') loadWatching(); } });
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-tab]'); if(t){ go(t.dataset.tab); return; }
+  const tg = e.target.closest('[data-tab-go]'); if(tg){ go(tg.dataset.tabGo); return; }
+  const w = e.target.closest('[data-watch]'); if(w){ toggleWatch(w.dataset.watch, w); return; }
+  const o = e.target.closest('[data-open]'); if(o){ openSheet(o.dataset.open); return; }
+  const f = e.target.closest('[data-fam]'); if(f){ const qi = $('#q'); if(qi) S.browse.q = qi.value; S.browse.family = f.dataset.fam; store.set('fam', S.browse.family); S.browse.items = []; drawBrowse(); return; }
+  const u = e.target.closest('[data-unfam]'); if(u){ (async () => { try{ await api.rpc('unwatch_family', { p_family:u.dataset.unfam }); toast('Stopped watching the family.'); S.watches = null;
+    const fam = S.families.find(x => x.id === u.dataset.unfam); if(fam){ fam.watched = false; fam.restocks = false; }
+    if(S.tab === 'browse') drawBrowse(); else loadWatching(); }catch(x){ toast(x.message); } })(); }
+});
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeSheet(); });
+
+(async function boot(){
+  if('serviceWorker' in navigator && !TEST_PUSH && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(() => {});
+  try{ cfg = await (await fetch('config.json', { cache:'no-cache' })).json(); }catch(e){ cfg = store.get('cfg'); }
+  if(cfg) store.set('cfg', cfg);
+  if(!cfg || !cfg.url || !cfg.key){
+    $('#app').innerHTML = '<div class="signin"><img src="icon.svg" alt=""><h1>Squishscouter</h1><p>This copy of the app isn’t connected to its server yet.</p><p class="sub">Put the Supabase project address and publishable key in config.json (SETUP.md, step 2).</p></div>';
+    return;
+  }
+  cfg.url = cfg.url.replace(/\/$/, '');
+  if(api.auth) start(); else drawSignIn('email');
+})();
+</script>
+</body>
+</html>
