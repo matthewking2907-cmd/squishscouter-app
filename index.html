@@ -418,7 +418,7 @@ function searchLinks(s){
     esc(f.label.replace(/ and bao buns| and sensory toys/, '').replace('Other squishy', 'Squishies')) + '</a>').join('');
 }
 function drawShops(){
-  const hand = S.shopList.filter(s => s.kind === 'manual' || s.blocked), auto = S.shopList.filter(s => s.kind === 'shopify' && !s.blocked);
+  const hand = S.shopList.filter(s => s.kind === 'manual' || s.blocked), auto = S.shopList.filter(s => (s.kind === 'shopify' || s.kind === 'woocommerce') && !s.blocked);
   page().innerHTML = '<h2>Check it yourself</h2><p class="sub">These shops don’t publish stock we can read, so each button opens that shop’s own search for you.</p>' +
     '<div class="shops">' + hand.map(s => '<div class="item"><div class="txt"><div class="t"><a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(s.name) + '</a></div>' +
       '<div class="meta">' + esc(s.blocked ? 'We stopped checking automatically: ' + s.blocked : cap(s.why || 'No stock list we can read')) + (s.note ? '. ' + esc(cap(s.note)) : '') + '</div>' +
@@ -531,7 +531,7 @@ function drawSignIn(step, email, err){
       : '<form id="f"><label for="email">Your email address</label><input id="email" type="email" autocomplete="email" required value="' + esc(email || '') + '">' +
         '<button class="btn fill" type="submit">Email me a sign-in code</button><p class="err" id="err" role="alert">' + esc(err || '') + '</p>' +
         '<p class="sub">No password. We email a code each time you sign in on a new device. This is a private trial, so only invited email addresses work.</p></form>') +
-    (cfg.contact ? '<p class="sub" style="margin-top:28px">Run a shop? Squishscouter reads public stock lists a few times an hour, one request at a time. To ask us to stop, contact <a href="' + esc(/^[^:@]+@/.test(cfg.contact) ? 'mailto:' + cfg.contact : cfg.contact) + '">' + esc(cfg.contact) + '</a>.</p>' : '') + '</div>';
+    (cfg.contact ? '<p class="sub" style="margin-top:28px">Run a shop? Squishscouter reads public stock lists every few minutes, one request at a time. To ask us to stop, contact <a href="' + esc(/^[^:@]+@/.test(cfg.contact) ? 'mailto:' + cfg.contact : cfg.contact) + '">' + esc(cfg.contact) + '</a>.</p>' : '') + '</div>';
   const f = $('#f');
   if(step === 'code'){
     $('#code').focus();
