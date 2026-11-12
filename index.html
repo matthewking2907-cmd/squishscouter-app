@@ -232,7 +232,13 @@ function badge(p){
 /* "Checked 14:05 · next check in 3:12" for a shop; a product the NeeDoh fast lane reads (fast) says so instead */
 function nextText(shop, fast){
   if(!shop) return { t:'' };
-  if(fast && shop.fast && !shop.blocked) return { t:'Checked every 20 seconds' };
+  if(fast && shop.fast && !shop.blocked && shop.fast_next){
+    // the fast lane reads every 20 seconds like clockwork, so count down to the next read and start again
+    let next = Date.parse(shop.fast_next); const now = Date.now();
+    if(next <= now) next += Math.ceil((now - next + 1) / 20000) * 20000;
+    const secs = Math.ceil((next - now) / 1000);
+    return { t:'Checked ' + new Date(next - 20000).toLocaleTimeString('en-GB') + ' · next check in 0:' + String(Math.min(secs, 20)).padStart(2, '0') };
+  }
   if(shop.blocked) return { t:'Automatic checks stopped: check it yourself', bad:true };
   if(!shop.last_checked) return { t:'Not checked yet · first check soon' };
   const left = Date.parse(shop.next_check) - Date.now();
