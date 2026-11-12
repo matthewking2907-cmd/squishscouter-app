@@ -229,9 +229,10 @@ function badge(p){
   if(p.preorder) return '<span class="badge pre">Pre-order</span>';
   return '<span class="badge ok">In stock</span>';
 }
-/* "Checked 14:05 · next check in 3:12" for a shop */
-function nextText(shop){
+/* "Checked 14:05 · next check in 3:12" for a shop; a product the NeeDoh fast lane reads (fast) says so instead */
+function nextText(shop, fast){
   if(!shop) return { t:'' };
+  if(fast && shop.fast && !shop.blocked) return { t:'Checked every 20 seconds' };
   if(shop.blocked) return { t:'Automatic checks stopped: check it yourself', bad:true };
   if(!shop.last_checked) return { t:'Not checked yet · first check soon' };
   const left = Date.parse(shop.next_check) - Date.now();
@@ -241,7 +242,7 @@ function nextText(shop){
 }
 function tick(){
   document.querySelectorAll('.next[data-shop]').forEach(el => {
-    const n = nextText(S.shops[el.dataset.shop]); if(el.textContent !== n.t) el.textContent = n.t; el.classList.toggle('bad', !!n.bad);
+    const n = nextText(S.shops[el.dataset.shop], el.dataset.fast === '1'); if(el.textContent !== n.t) el.textContent = n.t; el.classList.toggle('bad', !!n.bad);
   });
 }
 
@@ -254,7 +255,7 @@ function card(p){
     '<div class="body"><h4>' + esc(p.title) + '</h4>' +
     '<span class="meta">' + esc(p.shop) + (priceText(p) ? ' · ' + priceText(p) : '') + (p.editions > 1 ? ' · ' + p.editions_in + ' of ' + p.editions + ' in stock' : '') + '</span>' +
     badge(p) + (p.strings_tag ? '<span class="strings">⚠️ ' + esc(p.strings || 'Strings attached: check the shop page') + '</span>' : '') +
-    '<span class="next" data-shop="' + (shop ? shop.id : '') + '"></span>' +
+    '<span class="next" data-shop="' + (shop ? shop.id : '') + '"' + (p.fast ? ' data-fast="1"' : '') + '></span>' +
     '<div class="btns">' + watchBtn(p) +
       '<a class="btn small quiet" href="' + esc(p.url) + '" target="_blank" rel="noopener">Open in shop</a>' +
       (p.available && p.basket && !p.gone ? '<a class="btn small fill" href="' + esc(p.basket) + '" target="_blank" rel="noopener">Add to basket</a>' : '') +
@@ -308,7 +309,7 @@ async function openSheet(id){
     '<div class="in"><h2>' + esc(p.title) + '</h2>' +
     '<span class="meta">' + esc(p.shop) + (p.vendor ? ' · ' + esc(p.vendor) : '') + (priceText(p) ? ' · ' + priceText(p) : '') + '</span>' + badge(p) +
     (p.strings_tag ? '<span class="strings">⚠️ ' + esc(p.strings || 'Strings attached: check the shop page') + '</span>' : '') +
-    '<span class="next" data-shop="' + (shop ? shop.id : '') + '"></span>' +
+    '<span class="next" data-shop="' + (shop ? shop.id : '') + '"' + (p.fast ? ' data-fast="1"' : '') + '></span>' +
     (p.variants.length > 1 ? '<h3>Editions</h3><ul class="eds">' + p.variants.map(v => '<li><span>' + (v.available ? '✅ ' : '❌ ') + esc(v.title || 'Standard') + ' · ' + money(v.price) + '</span>' +
       (v.available && v.basket && !p.gone ? '<a class="btn small fill" href="' + esc(v.basket) + '" target="_blank" rel="noopener">Add to basket</a>' : '') + '</li>').join('') + '</ul>' : '') +
     '<h3>Restocks</h3><p class="sub">' + esc(hist.join(' ')) + '</p>' +
@@ -424,9 +425,9 @@ function drawShops(){
       '<div class="meta">' + esc(s.blocked ? 'We stopped checking automatically: ' + s.blocked : cap(s.why || 'No stock list we can read')) + (s.note ? '. ' + esc(cap(s.note)) : '') + '</div>' +
       '<div class="links">' + (s.blocked ? '<a class="btn small quiet" href="' + esc(s.url) + '" target="_blank" rel="noopener">Open shop</a>' : searchLinks(s)) + '</div>' +
       (s.unverified ? '<div class="meta">Search link not confirmed yet.</div>' : '') + '</div></div>').join('') + '</div>' +
-    '<h2 style="margin-top:28px">Checked for you</h2><p class="sub">Squishscouter reads these shops’ public stock lists every few minutes, politely, and alerts you the moment something you watch comes back.</p>' +
+    '<h2 style="margin-top:28px">Checked for you</h2><p class="sub">Squishscouter reads these shops’ public stock lists every few minutes, and their NeeDoh every 20 seconds, politely, and alerts you the moment something you watch comes back.</p>' +
     '<div class="shops">' + auto.map(s => '<div class="item"><div class="txt"><div class="t"><a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(s.name) + '</a></div>' +
-      '<div class="next" data-shop="' + s.id + '"></div>' + (s.last_error && s.fail_count ? '<div class="meta">Last problem: ' + esc(s.last_error) + '</div>' : '') + '</div></div>').join('') + '</div>';
+      '<div class="next" data-shop="' + s.id + '"></div>' + (s.fast ? '<div class="meta">NeeDoh: checked every 20 seconds</div>' : '') + (s.last_error && s.fail_count ? '<div class="meta">Last problem: ' + esc(s.last_error) + '</div>' : '') + '</div></div>').join('') + '</div>';
   tick();
 }
 
